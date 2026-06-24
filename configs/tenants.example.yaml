@@ -1,0 +1,48 @@
+tenants:
+  fintech:
+    display_name: Fintech Platform
+    default_environment: development
+    environments:
+      development:
+        default_readonly: true
+        require_approval_for_high_risk: false
+      staging:
+        default_readonly: true
+        require_approval_for_high_risk: true
+      production:
+        default_readonly: true
+        require_approval_for_high_risk: true
+        require_approval_for_medium_data_export: true
+
+    provider_visibility:
+      postgres:
+        connections:
+          - fintech_user_db
+          - fintech_ledger_db
+      github:
+        accounts:
+          - personal
+      redash:
+        connections:
+          - analytics
+
+    users:
+      an@example.com:
+        roles:
+          - developer
+        allowed_environments:
+          - development
+          - staging
+
+      admin@example.com:
+        roles:
+          - admin
+        allowed_environments:
+          - development
+          - staging
+          - production
+
+    audit:
+      retention_days: 180
+      store_raw_payloads: false
+      store_sanitized_summaries: true

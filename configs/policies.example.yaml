@@ -1,0 +1,120 @@
+policies:
+  - id: postgres-readonly-block-write-keywords
+    description: Block write/destructive SQL on readonly PostgreSQL connections.
+    effect: deny
+    when:
+      provider: postgres
+      tool: postgres.query_readonly
+      connection_readonly: true
+      sql_contains_any:
+        - DROP
+        - DELETE
+        - TRUNCATE
+        - ALTER
+        - INSERT
+        - UPDATE
+        - CREATE
+    reason: Readonly PostgreSQL connections can execute only SELECT/WITH/EXPLAIN.
+
+  - id: postgres-no-multi-statement
+    description: Prevent multi-statement SQL execution.
+    effect: deny
+    when:
+      provider: postgres
+      tool_any:
+        - postgres.query_readonly
+        - postgres.explain_query
+      sql_has_multiple_statements: true
+    reason: Multi-statement SQL is not allowed.
+
+  - id: postgres-enforce-max-rows
+    description: Enforce max rows for PostgreSQL readonly queries.
+    effect: mutate_or_deny
+    when:
+      provider: postgres
+      tool: postgres.query_readonly
+      requested_max_rows_gt_connection_max_rows: true
+    action:
+      set_max_rows_to_connection_limit: true
+    reason: Query result size is limited by connection policy.
+
+  - id: postgres-block-sensitive-columns
+    description: Block reads from sensitive auth columns.
+    effect: deny
+    when:
+      provider: postgres
+      tool: postgres.query_readonly
+      sql_references_any:
+        - users.password_hash
+        - users.reset_token
+        - users.api_key
+    reason: Sensitive credential columns are not readable through MCP.
+
+  - id: github-delete-repo-disabled
+    description: GitHub delete repository is disabled by default.
+    effect: deny
+    when:
+      provider: github
+      tool: github.delete_repository
+    reason: Repository deletion is a critical destructive action and is disabled.
+
+  - id: slack-production-incident-role-required
+    description: Slack production incident channel requires incident_manager role.
+    effect: deny
+    when:
+      provider: slack
+      tool: slack.send_message
+      channel: production-incident
+      user_missing_role: incident_manager
+    reason: Only incident managers may post to production incident channels.
+
+  - id: kubernetes-production-delete-pod-approval
+    description: Kubernetes delete pod in production requires approval.
+    effect: require_approval
+    when:
+      provider: kubernetes
+      tool: kubernetes.delete_pod
+      namespace_environment: production
+    reason: Production infrastructure changes require human approval.
+
+  - id: tainted-github-file-to-slack
+    description: Prevent cross-tool exfiltration from GitHub file content to Slack.
+    effect: require_approval
+    when:
+      target_tool: slack.send_message
+      context_contains_tainted_source: github.get_file
+    reason: Tainted external content cannot be sent outbound without approval.
+
+  - id: custom-http-block-secret-like-payload
+    description: Block outbound HTTP posts containing token/password patterns.
+    effect: deny
+    when:
+      target_tool: custom_http.post
+      payload_contains_secret_pattern: true
+    reason: Outbound HTTP payload contains secret-like content.
+
+  - id: block-env-output
+    description: No tool may return environment variables.
+    effect: deny
+    when:
+      output_contains_environment_variables: true
+    reason: Environment variables may contain secrets.
+
+  - id: block-poisoned-tool-metadata
+    description: Tool metadata cannot instruct the model to call other tools or bypass policy.
+    effect: deny
+    when:
+      tool_metadata_contains_any:
+        - ignore previous instructions
+        - reveal secrets
+        - call another tool
+        - send data to external URL
+        - bypass permission
+    reason: Tool metadata appears poisoned.
+
+  - id: resource-content-system-override-warning
+    description: Resource content containing system override instructions is treated as tainted data.
+    effect: allow_with_warning
+    when:
+      resource_content_contains_system_override_instruction: true
+    reason: Resource content is untrusted and cannot override system instructions.

@@ -1,0 +1,112 @@
+roles:
+  developer:
+    allow:
+      - provider: postgres
+        tool: postgres.list_connections
+        connections: ["*"]
+        risk_levels: [LOW]
+
+      - provider: postgres
+        tool: postgres.list_tables
+        connections: ["fintech_user_db", "fintech_ledger_db"]
+        risk_levels: [LOW]
+
+      - provider: postgres
+        tool: postgres.describe_table
+        connections: ["fintech_user_db", "fintech_ledger_db"]
+        risk_levels: [LOW]
+
+      - provider: postgres
+        tool: postgres.query_readonly
+        connections: ["fintech_user_db"]
+        environments: [development, staging]
+        risk_levels: [MEDIUM]
+        conditions:
+          max_rows: 100
+
+      - provider: github
+        tool: github.list_repositories
+        accounts: [personal]
+        risk_levels: [LOW]
+
+      - provider: github
+        tool: github.search_code
+        accounts: [personal]
+        risk_levels: [MEDIUM]
+
+      - provider: github
+        tool: github.get_file
+        accounts: [personal]
+        risk_levels: [MEDIUM]
+
+      - provider: github
+        tool: github.get_pull_request
+        accounts: [personal]
+        risk_levels: [MEDIUM]
+
+      - provider: redash
+        tool: redash.list_connections
+        connections: [analytics]
+        risk_levels: [LOW]
+
+      - provider: redash
+        tool: redash.get_query
+        connections: [analytics]
+        risk_levels: [LOW]
+
+      - provider: redash
+        tool: redash.get_cached_query_results
+        connections: [analytics]
+        risk_levels: [MEDIUM]
+
+      - provider: redash
+        tool: redash.fetch_query_results
+        connections: [analytics]
+        risk_levels: [MEDIUM]
+
+    deny:
+      - provider: postgres
+        tool: postgres.query_write
+        connections: ["*"]
+
+      - provider: postgres
+        tool: postgres.drop_table
+        connections: ["*"]
+
+      - provider: github
+        tool: github.delete_repository
+        accounts: ["*"]
+
+      - provider: "*"
+        tool: "*.read_secret"
+
+  incident_manager:
+    allow:
+      - provider: slack
+        tool: slack.send_message
+        accounts: [workspace_main]
+        channels: [production-incident]
+        risk_levels: [HIGH]
+        require_approval: true
+    deny: []
+
+  admin:
+    allow:
+      - provider: "*"
+        tool: "*"
+        connections: ["*"]
+        accounts: ["*"]
+        require_approval_for_risk_levels: [HIGH, CRITICAL]
+    deny:
+      - provider: "*"
+        tool: "*.read_secret"
+      - provider: "*"
+        tool: "*.show_env"
+      - provider: "*"
+        tool: "*.show_config"
+
+defaults:
+  deny_unlisted_tools: true
+  deny_high_and_critical_without_approval: true
+  deny_destructive_in_production_without_approval: true
+  deny_tool_metadata_changed_without_review: true

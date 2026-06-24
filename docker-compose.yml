@@ -1,0 +1,24 @@
+services:
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mcp-all-in-one:local
+    init: true
+    stdin_open: true
+    volumes:
+      - ./configs:/app/configs:ro
+    environment:
+      REDASH_URL: ${REDASH_URL:-}
+      REDASH_API_KEY: ${REDASH_API_KEY:-}
+      REDASH_QUERY_ALLOWLIST: ${REDASH_QUERY_ALLOWLIST:-}
+      REDASH_MAX_ROWS: ${REDASH_MAX_ROWS:-500}
+      REDASH_MAX_WAIT_SECONDS: ${REDASH_MAX_WAIT_SECONDS:-120}
+      REDASH_REQUEST_TIMEOUT_MS: ${REDASH_REQUEST_TIMEOUT_MS:-15000}
+      REDASH_REFRESH_ENABLED: ${REDASH_REFRESH_ENABLED:-true}
+      REDASH_CACHED_FALLBACK_ENABLED: ${REDASH_CACHED_FALLBACK_ENABLED:-true}
+      REDASH_API_MODE: ${REDASH_API_MODE:-auto}
+      MCP_TENANT_ID: ${MCP_TENANT_ID:-local}
+      MCP_USER_ID: ${MCP_USER_ID:-local-user}
+      MCP_ROLES: ${MCP_ROLES:-reader}
+      MCP_ENVIRONMENT: ${MCP_ENVIRONMENT:-development}

@@ -1,0 +1,96 @@
+providers:
+  postgres:
+    enabled: true
+    type: postgres
+    version: "^0.1.0"
+    default_timeout_ms: 5000
+    connections:
+      fintech_user_db:
+        environment: development
+        host: localhost
+        port: 5432
+        database: fintech_user
+        username_ref: env:POSTGRES_USER
+        password_ref: env:POSTGRES_PASSWORD
+        readonly: true
+        max_rows: 100
+        statement_timeout_ms: 5000
+        schemas_allowlist:
+          - public
+        table_denylist:
+          - users.password_hash
+          - users.reset_token
+        column_redaction:
+          - pattern: "(?i)(password|token|secret|api_key|private_key)"
+            replacement: "[REDACTED]"
+          - pattern: "(?i)email"
+            replacement: "[MASKED_EMAIL]"
+
+      fintech_ledger_db:
+        environment: staging
+        host: localhost
+        port: 5432
+        database: fintech_ledger
+        username_ref: env:POSTGRES_LEDGER_USER
+        password_ref: env:POSTGRES_LEDGER_PASSWORD
+        readonly: true
+        max_rows: 100
+        statement_timeout_ms: 5000
+        schemas_allowlist:
+          - public
+        table_denylist:
+          - journal_entries.internal_note
+
+  github:
+    enabled: true
+    type: github
+    version: "^0.1.0"
+    accounts:
+      personal:
+        token_ref: env:GITHUB_TOKEN
+        default_owner: my-org
+        repo_allowlist:
+          - my-org/*
+        branch_allowlist:
+          - main
+          - develop
+        write_tools_enabled: false
+        delete_tools_enabled: false
+
+  redash:
+    enabled: true
+    type: redash
+    version: "^0.1.0"
+    connections:
+      analytics:
+        base_url: https://redash.example.com
+        api_key_ref: env:REDASH_API_KEY
+        # Prefer explicit query IDs. Use ["*"] only for a deliberately broad key.
+        query_allowlist: [123, 456]
+        max_rows: 500
+        max_wait_seconds: 120
+        request_timeout_ms: 15000
+        refresh_enabled: true
+        cached_fallback_enabled: true
+        # auto | results | legacy_refresh
+        api_mode: auto
+
+  slack:
+    enabled: false
+    type: slack
+    version: "^0.1.0"
+    accounts:
+      workspace_main:
+        bot_token_ref: env:SLACK_BOT_TOKEN
+        channel_allowlist:
+          - C0123456789
+        write_tools_enabled: false
+
+secret_resolver:
+  sources:
+    - type: env
+      enabled: true
+    - type: vault
+      enabled: false
+      address_ref: env:VAULT_ADDR
+      token_ref: env:VAULT_TOKEN
