@@ -24,8 +24,8 @@ export class AuditLogger {
 
   write(record: AuditRecord): void {
     const safeRecord = this.sanitizer.sanitize(record);
-    // MVP: stdout structured log. Replace with durable audit sink.
-    process.stdout.write(JSON.stringify({ audit: safeRecord }) + '\n');
+    // stdout is reserved for MCP stdio JSON-RPC frames.
+    process.stderr.write(JSON.stringify({ audit: safeRecord }) + '\n');
   }
 
   createBase(input: { context: RequestContext; tool: MCPToolDefinition; args: Record<string, unknown> }): Pick<AuditRecord, 'request_id' | 'correlation_id' | 'timestamp' | 'tenant_id' | 'user_id' | 'provider' | 'connection_id' | 'tool_name' | 'input_summary'> {
