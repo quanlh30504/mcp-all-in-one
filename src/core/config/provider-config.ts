@@ -27,7 +27,7 @@ export async function loadProviderEntries(): Promise<Record<string, ProviderEntr
 function redashConfigFromEnvironment(): Record<string, ProviderEntryConfig> {
   if (!process.env.REDASH_URL || !process.env.REDASH_API_KEY) return {};
 
-  const queryAllowlist = (process.env.REDASH_QUERY_ALLOWLIST ?? '*')
+  const queryAllowlist = (process.env.REDASH_QUERY_ALLOWLIST ?? '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean)
